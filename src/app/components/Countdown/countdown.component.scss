@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.cd-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(1200px 1200px at 0% 0%, #121826, #0b1020 60%);
+  min-height: 220px;
+  border-radius: 16px;
+}
+
+.cd-card {
+  --ring: rgba(99, 102, 241, 0.35);
+  --glow: rgba(99, 102, 241, 0.25);
+  color: #e8ecff;
+  text-align: center;
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cd-label {
+  margin: 0 0 8px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #aeb6ff;
+}
+
+.cd-primary {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  justify-content: center;
+}
+
+.cd-value {
+  font: 600 56px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 26px var(--glow);
+}
+
+.cd-unit {
+  padding-bottom: 6px;
+  font-size: 16px;
+  color: #b9c1ff;
+  opacity: 0.9;
+}
+
+.cd-breakdown {
+  margin: 10px 0 0;
+  font: 500 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  color: #c9d0ff;
+  opacity: 0.9;
+}
