@@ -5,6 +5,7 @@ import {
   primaryDisplay,
   formatBreakdown,
 } from '../../utils/time-format';
+import { interval, Subscription, take } from 'rxjs';
 
 @Component({
   selector: 'countdown-component',
@@ -28,18 +29,15 @@ import {
 export class CountdownComponent {
   time = signal(0);
 
-  private timerId: number | null = null;
+  private timerSub: Subscription | null = null;
   private destroyRef = inject(DestroyRef);
   private timerService = inject(TimerService);
 
   constructor() {
-    // Load once from API, then run countdown on client-side
     this.timerService
       .getTimeValue()
-      .then((sec) =>
-        this.startCountdown(Math.max(0, Math.floor(Number(sec) || 0)))
-      )
-      .catch(() => this.startCountdown(0));
+      .pipe(take(1))
+      .subscribe((sec) => this.startCountdown(sec));
   }
 
   private parts = computed(() => splitSeconds(this.time()));
@@ -50,22 +48,18 @@ export class CountdownComponent {
   private startCountdown(initial: number) {
     this.time.set(initial);
 
-    if (this.timerId != null) {
-      clearInterval(this.timerId);
-      this.timerId = null;
-    }
+    this.timerSub?.unsubscribe();
 
-    this.timerId = window.setInterval(() => {
-      const next = this.time() - 1;
+    this.timerSub = interval(1000).subscribe((i) => {
+      const next = initial - (i + 1);
       this.time.set(next > 0 ? next : 0);
-      if (next <= 0 && this.timerId != null) {
-        clearInterval(this.timerId);
-        this.timerId = null;
+      if (next <= 0) {
+        this.timerSub?.unsubscribe();
       }
-    }, 1000);
+    });
 
     this.destroyRef.onDestroy(() => {
-      if (this.timerId != null) clearInterval(this.timerId);
+      this.timerSub?.unsubscribe();
     });
   }
 }

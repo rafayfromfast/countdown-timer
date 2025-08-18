@@ -9,7 +9,6 @@ import { CountdownComponent } from './components/Countdown/countdown.component';
       <countdown-component></countdown-component>
     </main>
   `,
-  styleUrl: './app.component.css',
 })
 export class AppComponent {
   title = 'countdown-timer-v1';
