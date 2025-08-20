@@ -1,26 +1,46 @@
 import { Component, signal, inject, DestroyRef, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TimerService } from '../../timer.service';
 import {
   splitSeconds,
   primaryDisplay,
   formatBreakdown,
 } from '../../utils/time-format';
-import { interval, Subscription, take } from 'rxjs';
+import { interval } from 'rxjs';
+import { map, startWith, takeWhile, finalize } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'countdown-component',
   standalone: true,
+  imports: [CommonModule],
   template: `
-    <section class="cd-wrapper">
+    <section class="cd-wrapper" [attr.aria-busy]="isLoading()">
       <div class="cd-card" aria-live="polite">
-        <p class="cd-label">Time to Deadline</p>
-
-        <div class="cd-primary">
-          <span class="cd-value">{{ primaryValue() }}</span>
-          <span class="cd-unit">{{ primaryUnit() }}</span>
+        <!-- Loader -->
+        <div
+          *ngIf="isLoading()"
+          class="cd-loader"
+          role="status"
+          aria-label="Loading"
+        >
+          <span class="spinner"></span>
+          <span class="sr-only">Loading…</span>
         </div>
 
-        <p class="cd-breakdown">{{ fullBreakdown() }}</p>
+        <!-- Countdown -->
+        <ng-container *ngIf="!isLoading()">
+          <p class="cd-label">
+            {{ time() === 0 ? 'Deadline Reached' : 'Time to Deadline' }}
+          </p>
+
+          <div class="cd-primary">
+            <span class="cd-value">{{ primaryValue() }}</span>
+            <span class="cd-unit">{{ primaryUnit() }}</span>
+          </div>
+
+          <p class="cd-breakdown">{{ fullBreakdown() }}</p>
+        </ng-container>
       </div>
     </section>
   `,
@@ -28,15 +48,18 @@ import { interval, Subscription, take } from 'rxjs';
 })
 export class CountdownComponent {
   time = signal(0);
+  isLoading = signal(true);
 
-  private timerSub: Subscription | null = null;
   private destroyRef = inject(DestroyRef);
   private timerService = inject(TimerService);
 
   constructor() {
+    // show loader while fetching initial seconds
+    this.isLoading.set(true);
+
     this.timerService
       .getTimeValue()
-      .pipe(take(1))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((sec) => this.startCountdown(sec));
   }
 
@@ -45,21 +68,24 @@ export class CountdownComponent {
   primaryUnit = computed(() => primaryDisplay(this.parts()).unit);
   fullBreakdown = computed(() => formatBreakdown(this.parts()));
 
-  private startCountdown(initial: number) {
+  private startCountdown(initialSeconds: number) {
+    // if server returns null/NaN/negative, clamp to 0
+    const initial = Math.max(0, Math.floor(Number(initialSeconds) || 0));
     this.time.set(initial);
 
-    this.timerSub?.unsubscribe();
+    this.isLoading.set(false);
 
-    this.timerSub = interval(1000).subscribe((i) => {
-      const next = initial - (i + 1);
-      this.time.set(next > 0 ? next : 0);
-      if (next <= 0) {
-        this.timerSub?.unsubscribe();
-      }
-    });
+    const deadline = Date.now() + initial * 1000;
 
-    this.destroyRef.onDestroy(() => {
-      this.timerSub?.unsubscribe();
-    });
+    interval(1000)
+      .pipe(
+        startWith(0),
+        map(() => Math.floor(Math.max(0, deadline - Date.now()) / 1000)),
+        takeWhile((remaining) => remaining >= 0, true),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((remaining) => {
+        this.time.set(remaining);
+      });
   }
 }
