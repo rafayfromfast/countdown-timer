@@ -81,7 +81,7 @@ export class CountdownComponent {
       .pipe(
         startWith(0),
         map(() => Math.floor(Math.max(0, deadline - Date.now()) / 1000)),
-        takeWhile((remaining) => remaining >= 0, true),
+        takeWhile((remaining) => remaining > 0, true),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((remaining) => {
